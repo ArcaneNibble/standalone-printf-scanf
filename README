@@ -1,0 +1,3 @@
+This is a completely standalone version of printf/scanf extracted from musl
+libc. Notably, it is not affected by process locale and always acts as if the
+locale is "C".
