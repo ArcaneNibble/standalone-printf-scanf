@@ -29,11 +29,15 @@ static int my_isspace(int _c)
 #define shcnt(f) ((f)->shcnt)
 void shunget(SCANF_STATE *f)
 {
+	printf("shunget\n");
 	assert(!f->last_get_is_ungotten);
+	assert(f->shcnt);
+	f->shcnt--;
 	f->last_get_is_ungotten = 1;
 }
 void shlim(SCANF_STATE *f, off_t lim)
 {
+	printf("shlim %ld\n", lim);
 	f->shlim = lim;
 	f->is_limited = (lim != 0);
 
@@ -41,19 +45,18 @@ void shlim(SCANF_STATE *f, off_t lim)
 }
 int shgetc(SCANF_STATE *f)
 {
+	printf("shgetc\n");
+	if (f->is_limited && f->shcnt >= f->shlim)
+		return EOF;
+
+	f->shcnt++;
+
 	if (f->last_get_is_ungotten) {
 		f->last_get_is_ungotten = 0;
 		return f->last_get;
 	}
 
-	if (f->is_limited && f->shlim == 0)
-		return EOF;
-
-	if (f->is_limited)
-		f->shlim--;
-
 	// Have to actually get a new character now
-	f->shcnt++;
 	return f->last_get = f->getc_cb(f->cb_state);
 }
 
