@@ -18,7 +18,6 @@ typedef struct {
 	int last_get;
 	int last_get_is_ungotten;
 	off_t shlim, shcnt;
-	int is_limited;
 } SCANF_STATE;
 #define my_isdigit(a) (((unsigned)(a)-'0') < 10)
 static int my_isspace(int _c)
@@ -37,13 +36,11 @@ void shunget(SCANF_STATE *f)
 void shlim(SCANF_STATE *f, off_t lim)
 {
 	f->shlim = lim;
-	f->is_limited = (lim != 0);
-
 	f->shcnt = 0;
 }
 int shgetc(SCANF_STATE *f)
 {
-	if (f->is_limited && f->shcnt >= f->shlim)
+	if (f->shlim && f->shcnt >= f->shlim)
 		return EOF;
 
 	f->shcnt++;
@@ -977,7 +974,6 @@ int standalone_vcbscanf(void *restrict cb_state,
 		.cb_state = cb_state,
 		.last_get = 0,
 		.last_get_is_ungotten = 0,
-		.is_limited = 0,
 	};
 	int ret = my_vfscanf(&scanf_state, fmt, ap);
 
