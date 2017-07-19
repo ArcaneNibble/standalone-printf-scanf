@@ -13,4 +13,7 @@ size_t standalone_c16rtomb(char *restrict s, char16_t c16, char16_t *restrict ps
 // Converts wide characters to WTF-8. Does not have exactly the same semantics as the "real" wcrtomb!
 size_t standalone_wcrtomb(char *restrict s, wchar_t wc, char16_t *restrict ps);
 
+// Always outputs UTF-32, but the type of the mbstate_t is altered
+size_t standalone_mbrtowc(char32_t *restrict wc, const char *restrict src, size_t n, unsigned *restrict st);
+
 #endif
