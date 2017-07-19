@@ -1,4 +1,3 @@
-#include "stdio_impl.h"
 #include <errno.h>
 #include <ctype.h>
 #include <limits.h>
@@ -8,6 +7,14 @@
 #include <inttypes.h>
 #include <math.h>
 #include <float.h>
+
+#include "standalone_printf.h"
+
+typedef struct {
+	void (*out_cb)(void *state, const char *s , size_t l);
+	void *cb_state;
+} PRINTF_STATE;
+#define NL_ARGMAX 9
 
 /* Some useful macros */
 
@@ -156,12 +163,12 @@ static void pop_arg(union arg *arg, int type, va_list *ap)
 	}
 }
 
-static void out(FILE *f, const char *s, size_t l)
+static void out(PRINTF_STATE *f, const char *s, size_t l)
 {
-	if (!(f->flags & F_ERR)) __fwritex((void *)s, l, f);
+	f->out_cb(f->cb_state, s, l);
 }
 
-static void pad(FILE *f, char c, int w, int l, int fl)
+static void pad(PRINTF_STATE *f, char c, int w, int l, int fl)
 {
 	char pad[256];
 	if (fl & (LEFT_ADJ | ZERO_PAD) || l >= w) return;
@@ -203,7 +210,7 @@ static char *fmt_u(uintmax_t x, char *s)
 typedef char compiler_defines_long_double_incorrectly[9-(int)sizeof(long double)];
 #endif
 
-static int fmt_fp(FILE *f, long double y, int w, int p, int fl, int t)
+static int fmt_fp(PRINTF_STATE *f, long double y, int w, int p, int fl, int t)
 {
 	uint32_t big[(LDBL_MANT_DIG+28)/29 + 1          // mantissa expansion
 		+ (LDBL_MAX_EXP+LDBL_MANT_DIG+28+8)/9]; // exponent expansion
@@ -452,7 +459,7 @@ static int getint(char **s) {
 	return i;
 }
 
-static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg, int *nl_type)
+static int printf_core(PRINTF_STATE *f, const char *fmt, va_list *ap, union arg *nl_arg, int *nl_type)
 {
 	char *a, *z, *s=(char *)fmt;
 	unsigned l10n=0, fl;
@@ -679,7 +686,7 @@ overflow:
 	return -1;
 }
 
-int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap)
+int vfprintf(PRINTF_STATE *restrict f, const char *restrict fmt, va_list ap)
 {
 	va_list ap2;
 	int nl_type[NL_ARGMAX+1] = {0};
@@ -695,26 +702,7 @@ int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap)
 		return -1;
 	}
 
-	FLOCK(f);
-	olderr = f->flags & F_ERR;
-	if (f->mode < 1) f->flags &= ~F_ERR;
-	if (!f->buf_size) {
-		saved_buf = f->buf;
-		f->wpos = f->wbase = f->buf = internal_buf;
-		f->buf_size = sizeof internal_buf;
-		f->wend = internal_buf + sizeof internal_buf;
-	}
 	ret = printf_core(f, fmt, &ap2, nl_arg, nl_type);
-	if (saved_buf) {
-		f->write(f, 0, 0);
-		if (!f->wpos) ret = -1;
-		f->buf = saved_buf;
-		f->buf_size = 0;
-		f->wpos = f->wbase = f->wend = 0;
-	}
-	if (f->flags & F_ERR) ret = -1;
-	f->flags |= olderr;
-	FUNLOCK(f);
 	va_end(ap2);
 	return ret;
 }
