@@ -76,7 +76,6 @@ size_t standalone_wcrtomb(char *restrict s, wchar_t wc, char16_t *restrict ps) {
 #define C(x) ( x<2 ? -1 : ( R(0x80,0xc0) | x ) )
 #define D(x) C((x+16))
 #define E(x) ( ( x==0 ? R(0xa0,0xc0) : \
-                 x==0xd ? R(0x80,0xa0) : \
                  R(0x80,0xc0) ) \
              | ( R(0x80,0xc0) >> 6 ) \
              | x )
@@ -105,7 +104,7 @@ const uint32_t bittab[] = {
 #define SA 0xc2u
 #define SB 0xf4u
 
-// Always outputs UTF-32, but the type of the mbstate_t is altered
+// Always outputs UTF-32, and the type of the mbstate_t is altered
 size_t standalone_mbrtowc(char32_t *restrict wc, const char *restrict src, size_t n, unsigned *restrict st)
 {
     unsigned c;
