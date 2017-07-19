@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <wchar.h>
 #include <limits.h>
 #include <string.h>
 #include <stdint.h>
@@ -11,6 +10,7 @@
 #include <float.h>
 
 #include "standalone_scanf.h"
+#include "wtfnicode.h"
 
 typedef struct {
     int (*getc_cb)(void *state);
@@ -701,7 +701,7 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 	int c, t;
 	char *s;
 	wchar_t *wcs;
-	mbstate_t st;
+	unsigned st;
 	void *dest=NULL;
 	int invert;
 	int matches=0;
@@ -710,7 +710,7 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 	off_t pos = 0;
 	unsigned char scanset[257];
 	size_t i, k;
-	wchar_t wc;
+	char32_t wc;
 
 	for (p=(const unsigned char *)fmt; *p; p++) {
 
@@ -860,14 +860,30 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 				} else {
 					wcs = dest;
 				}
-				st = (mbstate_t){0};
+				st = 0;
 				while (scanset[(c=shgetc(f))+1]) {
-					switch (mbrtowc(&wc, &(char){c}, 1, &st)) {
+					switch (standalone_mbrtowc(&wc, &(char){c}, 1, &st)) {
 					case -1:
 						goto input_fail;
 					case -2:
 						continue;
 					}
+#if WCHAR_MAX == 65535
+					if (wcs) wcs[i++] = 0xd7c0 + (wc >> 10);
+					if (alloc && i==k) {
+						k+=k+1;
+						wchar_t *tmp = realloc(wcs, k*sizeof(wchar_t));
+						if (!tmp) goto alloc_fail;
+						wcs = tmp;
+					}
+					if (wcs) wcs[i++] = (wc & 0x3ff) + 0xdc00;
+					if (alloc && i==k) {
+						k+=k+1;
+						wchar_t *tmp = realloc(wcs, k*sizeof(wchar_t));
+						if (!tmp) goto alloc_fail;
+						wcs = tmp;
+					}
+#else
 					if (wcs) wcs[i++] = wc;
 					if (alloc && i==k) {
 						k+=k+1;
@@ -875,8 +891,9 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 						if (!tmp) goto alloc_fail;
 						wcs = tmp;
 					}
+#endif
 				}
-				if (!mbsinit(&st)) goto input_fail;
+				if (st) goto input_fail;
 			} else if (alloc) {
 				s = malloc(k);
 				if (!s) goto alloc_fail;
