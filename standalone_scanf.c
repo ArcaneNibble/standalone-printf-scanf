@@ -7,10 +7,13 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "stdio_impl.h"
-#include "shgetc.h"
-#include "intscan.h"
-#include "floatscan.h"
+#include "standalone_scanf.h"
+
+typedef struct {
+    int (*getc_cb)(void *state);
+    void (*ungetc_cb)(void *state, int c);
+	void *cb_state;
+} SCANF_STATE;
 
 #define SIZE_hh -2
 #define SIZE_h  -1
@@ -53,7 +56,7 @@ static void *arg_n(va_list ap, unsigned int n)
 	return p;
 }
 
-int vfscanf(FILE *restrict f, const char *restrict fmt, va_list ap)
+static int my_vfscanf(FILE *restrict f, const char *restrict fmt, va_list ap)
 {
 	int width;
 	int size;
@@ -329,4 +332,29 @@ match_fail:
 	return matches;
 }
 
-weak_alias(vfscanf,__isoc99_vfscanf);
+int standalone_vcbscanf(void *restrict cb_state,
+    int (*getc_cb)(void *state),
+    void (*ungetc_cb)(void *state, int c),
+	const char *restrict fmt, va_list ap)
+{
+	SCANF_STATE scanf_state = {
+		.getc_cb = getc_cb,
+		.ungetc_cb = ungetc_cb,
+		.cb_state = cb_state,
+	};
+	return my_vfscanf(&scanf_state, fmt, ap);
+}
+
+
+int standalone_cbscanf(void *restrict cb_state,
+    int (*getc_cb)(void *state),
+    void (*ungetc_cb)(void *state, int c),
+	const char *restrict fmt, ...)
+{
+	int ret;
+	va_list ap;
+	va_start(ap, fmt);
+	ret = standalone_vcbprintf(cb_state, getc_cb, ungetc_cb, fmt, ap);
+	va_end(ap);
+	return ret;
+}
