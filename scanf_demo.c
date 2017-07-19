@@ -2,7 +2,7 @@
 #include <string.h>
 #include "standalone_scanf.h"
 
-const char *mystr = "0.5 abc 0xdef";
+const char *mystr = "0.12345 abc 0xdef ghi";
 size_t idx;
 
 int my_getc(void *state) {
@@ -30,8 +30,9 @@ int main (int argc, char **argv) {
     char s[10];
     int i;
 
-    standalone_cbscanf(0, my_getc, my_ungetc, "%f %s %i", &f, s, &i);
+    int ret = standalone_cbscanf(0, my_getc, my_ungetc, "%9f %s %i", &f, s, &i);
 
+    printf("ret = %d\n", ret);
     printf("The float is: %f\n", f);
     printf("The string is: %s\n", s);
     printf("The integer is: %d\n", i);
