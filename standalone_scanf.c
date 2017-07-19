@@ -36,6 +36,8 @@ void shlim(SCANF_STATE *f, off_t lim)
 {
 	f->shlim = lim;
 	f->is_limited = (lim != 0);
+
+	f->shcnt = 0;
 }
 int shgetc(SCANF_STATE *f)
 {

@@ -2,7 +2,7 @@
 #include <string.h>
 #include "standalone_scanf.h"
 
-const char *mystr = "0.12345 abc 0xdef ghi";
+const char *mystr = "0.1234 abc 0xdef ghi";
 size_t idx;
 
 int my_getc(void *state) {
