@@ -39,16 +39,16 @@ void shlim(SCANF_STATE *f, off_t lim)
 }
 int shgetc(SCANF_STATE *f)
 {
+	if (f->last_get_is_ungotten) {
+		f->last_get_is_ungotten = 0;
+		return f->last_get;
+	}
+
 	if (f->is_limited && f->shlim == 0)
 		return EOF;
 
 	if (f->is_limited)
 		f->shlim--;
-
-	if (f->last_get_is_ungotten) {
-		f->last_get_is_ungotten = 0;
-		return f->last_get;
-	}
 
 	// Have to actually get a new character now
 	f->shcnt++;
