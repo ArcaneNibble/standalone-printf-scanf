@@ -74,7 +74,7 @@ static const unsigned char table[] = { -1,
 -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 };
 
-unsigned long long __intscan(SCANF_STATE *f, unsigned base, int pok, unsigned long long lim)
+static unsigned long long my_intscan(SCANF_STATE *f, unsigned base, int pok, unsigned long long lim)
 {
 	const unsigned char *val = table+1;
 	int c, neg=0;
@@ -567,7 +567,7 @@ static long double hexfloat(SCANF_STATE *f, int bits, int emin, int sign, int po
 	return scalbnl(y, e2);
 }
 
-long double __floatscan(SCANF_STATE *f, int prec, int pok)
+static long double my_floatscan(SCANF_STATE *f, int prec, int pok)
 {
 	int sign = 1;
 	size_t i;
@@ -939,7 +939,7 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 		case 'i':
 			base = 0;
 		int_common:
-			x = __intscan(f, base, 0, ULLONG_MAX);
+			x = my_intscan(f, base, 0, ULLONG_MAX);
 			if (!shcnt(f)) goto match_fail;
 			if (t=='p' && dest) *(void **)dest = (void *)(uintptr_t)x;
 			else store_int(dest, size, x);
@@ -948,7 +948,7 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 		case 'e': case 'E':
 		case 'f': case 'F':
 		case 'g': case 'G':
-			y = __floatscan(f, size, 0);
+			y = my_floatscan(f, size, 0);
 			if (!shcnt(f)) goto match_fail;
 			if (dest) switch (size) {
 			case SIZE_def:
