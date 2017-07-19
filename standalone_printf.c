@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <ctype.h>
 #include <limits.h>
 #include <string.h>
 #include <stdarg.h>
@@ -15,6 +14,7 @@ typedef struct {
 	void *cb_state;
 } PRINTF_STATE;
 #define NL_ARGMAX 9
+#define my_isdigit(a) (((unsigned)(a)-'0') < 10)
 
 /* Some useful macros */
 
@@ -452,7 +452,7 @@ static int fmt_fp(PRINTF_STATE *f, long double y, int w, int p, int fl, int t)
 
 static int getint(char **s) {
 	int i;
-	for (i=0; isdigit(**s); (*s)++) {
+	for (i=0; my_isdigit(**s); (*s)++) {
 		if (i > INT_MAX/10U || **s-'0' > INT_MAX-10*i) i = -1;
 		else i = 10*i + (**s-'0');
 	}
@@ -493,7 +493,7 @@ static int printf_core(PRINTF_STATE *f, const char *fmt, va_list *ap, union arg 
 		if (f) out(f, a, l);
 		if (l) continue;
 
-		if (isdigit(s[1]) && s[2]=='$') {
+		if (my_isdigit(s[1]) && s[2]=='$') {
 			l10n=1;
 			argpos = s[1]-'0';
 			s+=3;
@@ -508,7 +508,7 @@ static int printf_core(PRINTF_STATE *f, const char *fmt, va_list *ap, union arg 
 
 		/* Read field width */
 		if (*s=='*') {
-			if (isdigit(s[1]) && s[2]=='$') {
+			if (my_isdigit(s[1]) && s[2]=='$') {
 				l10n=1;
 				nl_type[s[1]-'0'] = INT;
 				w = nl_arg[s[1]-'0'].i;
@@ -522,7 +522,7 @@ static int printf_core(PRINTF_STATE *f, const char *fmt, va_list *ap, union arg 
 
 		/* Read precision */
 		if (*s=='.' && s[1]=='*') {
-			if (isdigit(s[2]) && s[3]=='$') {
+			if (my_isdigit(s[2]) && s[3]=='$') {
 				nl_type[s[2]-'0'] = INT;
 				p = nl_arg[s[2]-'0'].i;
 				s+=4;
