@@ -48,6 +48,7 @@ int shgetc(SCANF_STATE *f)
 	}
 
 	// Have to actually get a new character now
+	f->shcnt++;
 	return f->last_get = f->getc_cb(f->cb_state);
 }
 

@@ -30,7 +30,7 @@ int main (int argc, char **argv) {
     char s[10];
     int i;
 
-    standalone_cbscanf(0, my_getc, my_ungetc, "%f %s %d", &f, s, &i);
+    standalone_cbscanf(0, my_getc, my_ungetc, "%f %s %i", &f, s, &i);
 
     printf("The float is: %f\n", f);
     printf("The string is: %s\n", s);
