@@ -5,7 +5,7 @@
 
 // Convert a Unicode code unit to UTF-8, but allow converting low/high
 // surrogates blindly, producing WTF-8/CESU-8
-static size_t my_wcrtomb(char *restrict s, char32_t wc)
+size_t standalone_c32rtomb(char *restrict s, char32_t wc)
 {
 	if (!s) return 1;
 	if (wc < 0x80) {
@@ -37,14 +37,14 @@ size_t standalone_c16rtomb(char *restrict s, char16_t c16, char16_t *restrict ps
         // There was a high surrogate remembered in the state
         if (c16 - 0xdc00u >= 0x400) {
             // This current character is not a low surrogate (unpaired)
-            int ret = my_wcrtomb(s, *ps);
+            int ret = standalone_c32rtomb(s, *ps);
             *ps = 0;
-            return ret + my_wcrtomb(s + ret, c16);
+            return ret + standalone_c32rtomb(s + ret, c16);
         } else {
             // There is a properly paired high+low surrogate
             char32_t wc = (*ps - 0xd7c0 << 10) + (c16 - 0xdc00);
             *ps = 0;
-            return my_wcrtomb(s, wc);
+            return standalone_c32rtomb(s, wc);
         }
     } else {
         // There was no high surrogate remembered in the state
@@ -55,7 +55,7 @@ size_t standalone_c16rtomb(char *restrict s, char16_t c16, char16_t *restrict ps
         } else {
             // This is not a high surrogate - either a normal character or
             // something unpaired
-            return my_wcrtomb(s, c16);
+            return standalone_c32rtomb(s, c16);
         }
     }
 }
@@ -65,6 +65,6 @@ size_t standalone_wcrtomb(char *restrict s, wchar_t wc, char16_t *restrict ps) {
 #if WCHAR_MAX == 65535
     return standalone_c16rtomb(s, wc, ps);
 #else
-    return my_wcrtomb(s, wc);
+    return standalone_c32rtomb(s, wc);
 #endif
 }
