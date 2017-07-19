@@ -6,21 +6,23 @@ const char *mystr = "0.5 abc 0xdef";
 size_t idx;
 
 int my_getc(void *state) {
-    printf("getc at %d\n", (int)idx);
+    printf("getc at %d", (int)idx);
     if (idx < strlen(mystr)) {
+        printf(" -> '%c'\n", mystr[idx]);
         return mystr[idx++];
     } else if (idx == strlen(mystr)) {
+        printf(" -> EOF\n");
         idx++;
         return EOF;
     } else {
-        printf("getc OVERRUN!\n");
+        printf(" -> OVERRUN!\n");
         idx++;
         return EOF;
     }
 }
 
 void my_ungetc(void *state, int c) {
-    printf("unget %d\n", c);
+    printf("unget '%c' %d\n", c, c);
 }
 
 int main (int argc, char **argv) {

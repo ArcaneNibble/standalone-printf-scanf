@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
@@ -15,9 +16,40 @@
 
 typedef struct {
     int (*getc_cb)(void *state);
-    void (*ungetc_cb)(void *state, int c);
 	void *cb_state;
+	int last_get;
+	int last_get_is_ungotten;
+	off_t shlim, shcnt;
+	int is_limited;
 } SCANF_STATE;
+
+#define shcnt(f) ((f)->shcnt)
+void shunget(SCANF_STATE *f)
+{
+	assert(!f->last_get_is_ungotten);
+	f->last_get_is_ungotten = 1;
+}
+void shlim(SCANF_STATE *f, off_t lim)
+{
+	f->shlim = lim;
+	f->is_limited = (lim != 0);
+}
+int shgetc(SCANF_STATE *f)
+{
+	if (f->is_limited && f->shlim == 0)
+		return EOF;
+
+	if (f->is_limited)
+		f->shlim--;
+
+	if (f->last_get_is_ungotten) {
+		f->last_get_is_ungotten = 0;
+		return f->last_get;
+	}
+
+	// Have to actually get a new character now
+	return f->last_get = f->getc_cb(f->cb_state);
+}
 
 /* Lookup table for digit values. -1==255>=36 -> invalid */
 static const unsigned char table[] = { -1,
@@ -39,7 +71,7 @@ static const unsigned char table[] = { -1,
 -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 };
 
-unsigned long long __intscan(FILE *f, unsigned base, int pok, unsigned long long lim)
+unsigned long long __intscan(SCANF_STATE *f, unsigned base, int pok, unsigned long long lim)
 {
 	const unsigned char *val = table+1;
 	int c, neg=0;
@@ -142,7 +174,7 @@ done:
 #define CONCAT2(x,y) x ## y
 #define CONCAT(x,y) CONCAT2(x,y)
 
-static long long scanexp(FILE *f, int pok)
+static long long scanexp(SCANF_STATE *f, int pok)
 {
 	int c;
 	int x;
@@ -169,7 +201,7 @@ static long long scanexp(FILE *f, int pok)
 }
 
 
-static long double decfloat(FILE *f, int c, int bits, int emin, int sign, int pok)
+static long double decfloat(SCANF_STATE *f, int c, int bits, int emin, int sign, int pok)
 {
 	uint32_t x[KMAX];
 	static const uint32_t th[] = { LD_B1B_MAX };
@@ -420,7 +452,7 @@ static long double decfloat(FILE *f, int c, int bits, int emin, int sign, int po
 	return scalbnl(y, e2);
 }
 
-static long double hexfloat(FILE *f, int bits, int emin, int sign, int pok)
+static long double hexfloat(SCANF_STATE *f, int bits, int emin, int sign, int pok)
 {
 	uint32_t x = 0;
 	long double y = 0;
@@ -532,7 +564,7 @@ static long double hexfloat(FILE *f, int bits, int emin, int sign, int pok)
 	return scalbnl(y, e2);
 }
 
-long double __floatscan(FILE *f, int prec, int pok)
+long double __floatscan(SCANF_STATE *f, int prec, int pok)
 {
 	int sign = 1;
 	size_t i;
@@ -656,7 +688,7 @@ static void *arg_n(va_list ap, unsigned int n)
 	return p;
 }
 
-static int my_vfscanf(FILE *restrict f, const char *restrict fmt, va_list ap)
+static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list ap)
 {
 	int width;
 	int size;
@@ -676,8 +708,6 @@ static int my_vfscanf(FILE *restrict f, const char *restrict fmt, va_list ap)
 	unsigned char scanset[257];
 	size_t i, k;
 	wchar_t wc;
-
-	FLOCK(f);
 
 	for (p=(const unsigned char *)fmt; *p; p++) {
 
@@ -928,7 +958,6 @@ match_fail:
 			free(wcs);
 		}
 	}
-	FUNLOCK(f);
 	return matches;
 }
 
@@ -939,10 +968,18 @@ int standalone_vcbscanf(void *restrict cb_state,
 {
 	SCANF_STATE scanf_state = {
 		.getc_cb = getc_cb,
-		.ungetc_cb = ungetc_cb,
 		.cb_state = cb_state,
+		.last_get = 0,
+		.last_get_is_ungotten = 0,
+		.is_limited = 0,
 	};
-	return my_vfscanf(&scanf_state, fmt, ap);
+	int ret = my_vfscanf(&scanf_state, fmt, ap);
+
+	if (scanf_state.last_get_is_ungotten) {
+		ungetc_cb(cb_state, scanf_state.last_get);
+	}
+
+	return ret;
 }
 
 
