@@ -994,7 +994,7 @@ int standalone_vcbscanf(void *restrict cb_state,
 	};
 	int ret = my_vfscanf(&scanf_state, fmt, ap);
 
-	if (scanf_state.last_get_is_ungotten) {
+	if (ungetc_cb && scanf_state.last_get_is_ungotten) {
 		ungetc_cb(cb_state, scanf_state.last_get);
 	}
 
