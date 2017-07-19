@@ -474,7 +474,7 @@ static int printf_core(PRINTF_STATE *f, const char *fmt, va_list *ap, union arg 
 	const char *prefix;
 	int t, pl;
 	wchar_t wc[2], *ws;
-	char mb[4];
+	char mb[6];
 	char16_t mbst;
 
 	for (;;) {
