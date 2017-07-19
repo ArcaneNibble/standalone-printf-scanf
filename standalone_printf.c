@@ -686,8 +686,14 @@ overflow:
 	return -1;
 }
 
-int vfprintf(PRINTF_STATE *restrict f, const char *restrict fmt, va_list ap)
+int standalone_vcbprintf(void *restrict cb_state,
+	void (*out_cb)(void *state, const char *s , size_t l),
+	const char *restrict fmt, va_list ap)
 {
+	PRINTF_STATE printf_state = {
+		.out_cb = out_cb,
+		.cb_state = cb_state,
+	};
 	va_list ap2;
 	int nl_type[NL_ARGMAX+1] = {0};
 	union arg nl_arg[NL_ARGMAX+1];
@@ -702,7 +708,20 @@ int vfprintf(PRINTF_STATE *restrict f, const char *restrict fmt, va_list ap)
 		return -1;
 	}
 
-	ret = printf_core(f, fmt, &ap2, nl_arg, nl_type);
+	ret = printf_core(&printf_state, fmt, &ap2, nl_arg, nl_type);
 	va_end(ap2);
+	return ret;
+}
+
+
+int standalone_cbprintf(void *restrict cb_state,
+	void (*out_cb)(void *state, const char *s , size_t l),
+	const char *restrict fmt, ...)
+{
+	int ret;
+	va_list ap;
+	va_start(ap, fmt);
+	ret = standalone_vcbprintf(cb_state, out_cb, fmt, ap);
+	va_end(ap);
 	return ret;
 }
