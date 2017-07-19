@@ -8,6 +8,7 @@
 #include <float.h>
 
 #include "standalone_printf.h"
+#include "wtfnicode.h"
 
 typedef struct {
 	void (*out_cb)(void *state, const char *s , size_t l);
@@ -474,6 +475,7 @@ static int printf_core(PRINTF_STATE *f, const char *fmt, va_list *ap, union arg 
 	int t, pl;
 	wchar_t wc[2], *ws;
 	char mb[4];
+	char16_t mbst;
 
 	for (;;) {
 		/* This error is only specified for snprintf, but since it's
@@ -635,13 +637,15 @@ static int printf_core(PRINTF_STATE *f, const char *fmt, va_list *ap, union arg 
 			p = -1;
 		case 'S':
 			ws = arg.p;
-			for (i=l=0; i<p && *ws && (l=wctomb(mb, *ws++))>=0 && l<=p-i; i+=l);
+			mbst = 0;
+			for (i=l=0; i<p && *ws && (l=standalone_wcrtomb(mb, *ws++, &mbst))>=0 && l<=p-i; i+=l);
 			if (l<0) return -1;
 			if (i > INT_MAX) goto overflow;
 			p = i;
 			pad(f, ' ', w, p, fl);
 			ws = arg.p;
-			for (i=0; i<0U+p && *ws && i+(l=wctomb(mb, *ws++))<=p; i+=l)
+			mbst = 0;
+			for (i=0; i<0U+p && *ws && i+(l=standalone_wcrtomb(mb, *ws++, &mbst))<=p; i+=l)
 				out(f, mb, l);
 			pad(f, ' ', w, p, fl^LEFT_ADJ);
 			l = w>p ? w : p;
