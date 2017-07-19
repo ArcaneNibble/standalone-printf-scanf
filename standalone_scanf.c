@@ -1,9 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <ctype.h>
 #include <wchar.h>
-#include <wctype.h>
 #include <limits.h>
 #include <string.h>
 #include <stdint.h>
@@ -22,6 +20,11 @@ typedef struct {
 	off_t shlim, shcnt;
 	int is_limited;
 } SCANF_STATE;
+#define my_isdigit(a) (((unsigned)(a)-'0') < 10)
+static int my_isspace(int _c)
+{
+	return _c == ' ' || (unsigned)_c-'\t' < 5;
+}
 
 #define shcnt(f) ((f)->shcnt)
 void shunget(SCANF_STATE *f)
@@ -82,7 +85,7 @@ unsigned long long __intscan(SCANF_STATE *f, unsigned base, int pok, unsigned lo
 		errno = EINVAL;
 		return 0;
 	}
-	while (isspace((c=shgetc(f))));
+	while (my_isspace((c=shgetc(f))));
 	if (c=='+' || c=='-') {
 		neg = -(c=='-');
 		c = shgetc(f);
@@ -590,7 +593,7 @@ long double __floatscan(SCANF_STATE *f, int prec, int pok)
 		return 0;
 	}
 
-	while (isspace((c=shgetc(f))));
+	while (my_isspace((c=shgetc(f))));
 
 	if (c=='+' || c=='-') {
 		sign -= 2*(c=='-');
@@ -714,10 +717,10 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 
 		alloc = 0;
 
-		if (isspace(*p)) {
-			while (isspace(p[1])) p++;
+		if (my_isspace(*p)) {
+			while (my_isspace(p[1])) p++;
 			shlim(f, 0);
-			while (isspace(shgetc(f)));
+			while (my_isspace(shgetc(f)));
 			shunget(f);
 			pos += shcnt(f);
 			continue;
@@ -738,13 +741,13 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 		p++;
 		if (*p=='*') {
 			dest = 0; p++;
-		} else if (isdigit(*p) && p[1]=='$') {
+		} else if (my_isdigit(*p) && p[1]=='$') {
 			dest = arg_n(ap, *p-'0'); p+=2;
 		} else {
 			dest = va_arg(ap, void *);
 		}
 
-		for (width=0; isdigit(*p); p++) {
+		for (width=0; my_isdigit(*p); p++) {
 			width = 10*width + *p - '0';
 		}
 
@@ -808,7 +811,7 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 			continue;
 		default:
 			shlim(f, 0);
-			while (isspace(shgetc(f)));
+			while (my_isspace(shgetc(f)));
 			shunget(f);
 			pos += shcnt(f);
 		}
