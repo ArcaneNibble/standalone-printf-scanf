@@ -1,3 +1,30 @@
 This is a completely standalone version of printf/scanf extracted from musl
 libc. Notably, it is not affected by process locale and always acts as if the
 locale is "C".
+
+Notes on wide string handling:
+    If wchar_t is 32 bits:
+        wchar_t is always Unicode. Printing will output well-formed UTF-8 if
+        the input is well-formed. If the input contains surrogates
+        (U+D800 to U+DFFF inclusive) the will be blindly encoded even if a pair
+        of wchar_t would correctly form a UTF-16-encoded code point (resulting
+        in something like WTF-8 or CESU-8). Reading requires mostly-well-formed
+        UTF-8 but will accept encoded surrogates (like in WTF-8 or CESU-8).
+        However, these encoded surrogates will be blindly passed through and
+        no attempt will be made to combine them (unlike WTF-8).
+
+        The print and scan functionality are strictly inverses of each other,
+        but bogus input (surrogate codepoints) will lead to bogus output.
+
+    If wchar_t is 16 bits:
+        wchar_t is always Unicode (UTF-16). Printing will output WTF-8
+        (equivalent to UTF-8 if the input surrogates are properly paired).
+        Unpaired surrogates will be blindly encoded. There is a known bug with
+        width specifiers where too few characters will be printed if the
+        output gets truncated after a high surrogate is processed. Reading
+        behaves identically to the above case except that astral plane
+        codepoints will be encoded in UTF-16.
+
+        Note that the print and scan functionality are not strictly inverses
+        in this case. Scanning followed by printing will cause CESU-8 input
+        to be converted to UTF-8 output.
