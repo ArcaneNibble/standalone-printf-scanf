@@ -1,11 +1,12 @@
 #include <stdio.h>
-#include "standalone_printf.h"
+#include <string.h>
+#include "standalone_scanf.h"
 
 const char *mystr = "0.5 abc 0xdef";
 size_t idx;
 
 int my_getc(void *state) {
-    printf("getc at %d\n", idx);
+    printf("getc at %d\n", (int)idx);
     if (idx < strlen(mystr)) {
         return mystr[idx++];
     } else if (idx == strlen(mystr)) {
@@ -30,8 +31,8 @@ int main (int argc, char **argv) {
     standalone_cbscanf(0, my_getc, my_ungetc, "%f %s %d", &f, s, &i);
 
     printf("The float is: %f\n", f);
-    printf("The string is: %f\n", s);
-    printf("The integer is: %f\n", i);
+    printf("The string is: %s\n", s);
+    printf("The integer is: %d\n", i);
 
     return 0;
 }
