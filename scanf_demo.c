@@ -27,23 +27,30 @@ void my_ungetc(void *state, int c) {
 
 int main (int argc, char **argv) {
     float f;
-    char s[10];
-    int i;
+    char s1[10];
+    char s2[10];
+    int i1, i2, i3;
 
-    int ret = standalone_cbscanf(0, my_getc, my_ungetc, "%5f %s %n", &f, s, &i);
+    int ret = standalone_cbscanf(0, my_getc, my_ungetc, "%f %s %n %i %s %n", &f, s1, &i1, &i2, s2, &i3);
 
     printf("ret = %d\n", ret);
     printf("The float is: %f\n", f);
-    printf("The string is: %s\n", s);
-    printf("The integer is: %d\n", i);
+    printf("The string is: %s\n", s1);
+    printf("The string is: %s\n", s2);
+    printf("The integer is: %d\n", i1);
+    printf("The integer is: %d\n", i2);
+    printf("The integer is: %d\n", i3);
 
 
-    ret = sscanf(mystr, "%5f %s %n", &f, s, &i);
+    ret = sscanf(mystr, "%f %s %n %i %s %n", &f, s1, &i1, &i2, s2, &i3);
 
     printf("reference ret = %d\n", ret);
     printf("reference The float is: %f\n", f);
-    printf("reference The string is: %s\n", s);
-    printf("reference The integer is: %d\n", i);
+    printf("reference The string is: %s\n", s1);
+    printf("reference The string is: %s\n", s2);
+    printf("reference The integer is: %d\n", i1);
+    printf("reference The integer is: %d\n", i2);
+    printf("reference The integer is: %d\n", i3);
 
     return 0;
 }

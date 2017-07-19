@@ -26,19 +26,19 @@ static int my_isspace(int _c)
 }
 
 #define shcnt(f) ((f)->shcnt)
-void shunget(SCANF_STATE *f)
+static void shunget(SCANF_STATE *f)
 {
 	assert(!f->last_get_is_ungotten);
 	assert(f->shcnt);
 	f->shcnt--;
 	f->last_get_is_ungotten = 1;
 }
-void shlim(SCANF_STATE *f, off_t lim)
+static void shlim(SCANF_STATE *f, off_t lim)
 {
 	f->shlim = lim;
 	f->shcnt = 0;
 }
-int shgetc(SCANF_STATE *f)
+static int shgetc(SCANF_STATE *f)
 {
 	if (f->shlim && f->shcnt >= f->shlim)
 		return EOF;
