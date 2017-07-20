@@ -1,6 +1,7 @@
 #ifndef STANDALONE_PRINTF_H_
 #define STANDALONE_PRINTF_H_
 
+#include <stdarg.h>
 #include <stdio.h>
 
 int standalone_vcbprintf(void *restrict cb_state,

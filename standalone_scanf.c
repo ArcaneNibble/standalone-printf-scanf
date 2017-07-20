@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <limits.h>
 #include <string.h>
 #include <stdint.h>
@@ -17,7 +16,7 @@ typedef struct {
 	void *cb_state;
 	int last_get;
 	int last_get_is_ungotten;
-	off_t shlim, shcnt;
+	size_t shlim, shcnt;
 } SCANF_STATE;
 #define my_isdigit(a) (((unsigned)(a)-'0') < 10)
 static int my_isspace(int _c)
@@ -33,7 +32,7 @@ static void shunget(SCANF_STATE *f)
 	f->shcnt--;
 	f->last_get_is_ungotten = 1;
 }
-static void shlim(SCANF_STATE *f, off_t lim)
+static void shlim(SCANF_STATE *f, size_t lim)
 {
 	f->shlim = lim;
 	f->shcnt = 0;
@@ -707,7 +706,7 @@ static int my_vfscanf(SCANF_STATE *restrict f, const char *restrict fmt, va_list
 	int matches=0;
 	unsigned long long x;
 	long double y;
-	off_t pos = 0;
+	size_t pos = 0;
 	unsigned char scanset[257];
 	size_t i, k;
 	char32_t wc;
