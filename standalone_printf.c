@@ -727,3 +727,60 @@ int standalone_cbprintf(void *restrict cb_state,
 	va_end(ap);
 	return ret;
 }
+
+static void fprintf_out(void *cb_state, const char *s, size_t l)
+{
+	FILE *f = (FILE *)cb_state;
+
+	fwrite(s, 1, l, f);
+}
+
+int standalone_fprintf(FILE *restrict f, const char *restrict fmt, ...)
+{
+	int ret;
+	va_list ap;
+	va_start(ap, fmt);
+	ret = standalone_vcbprintf(f, fprintf_out, fmt, ap);
+	va_end(ap);
+
+	if (ferror(f)) ret = -1;
+
+	return ret;
+}
+
+typedef struct {
+	char *s;
+	size_t n;
+} SNPRINTF_STATE;
+
+static void snprintf_out(void *cb_state, const char *s, size_t l)
+{
+	SNPRINTF_STATE *c = (SNPRINTF_STATE *)cb_state;
+
+	size_t k = MIN(c->n, l);
+	if (k) {
+		memcpy(c->s, s, k);
+		c->s += k;
+		c->n -= k;
+	}
+	*c->s = 0;
+}
+
+int standalone_snprintf(char *restrict s, size_t n, const char *restrict fmt, ...)
+{
+	int ret;
+	va_list ap;
+	char dummy[1];
+	SNPRINTF_STATE c = { .s = n ? s : dummy, .n = n ? n-1 : 0 };
+
+	if (n > INT_MAX) {
+		errno = EOVERFLOW;
+		return -1;
+	}
+
+	*c.s = 0;
+	va_start(ap, fmt);
+	ret = standalone_vcbprintf(&c, snprintf_out, fmt, ap);
+	va_end(ap);
+	return ret;
+}

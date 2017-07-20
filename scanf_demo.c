@@ -3,7 +3,7 @@
 #include <wchar.h>
 #include "standalone_scanf.h"
 
-const char *mystr = "0x123 \xF0\x90\x90\xB7 456";
+const char *mystr = "0.3932922657273";
 size_t idx;
 
 int my_getc(void *state) {
@@ -28,33 +28,34 @@ void my_ungetc(void *state, int c) {
 
 int main (int argc, char **argv) {
     // float f;
+    double d;
     // char s1[10];
     // char s2[10];
-    int i1, i2, i3;
-    wchar_t wc[2] = {0, 0};
+    // int i1, i2, i3;
+    // wchar_t wc[2] = {0, 0};
 
-    int ret = standalone_cbscanf(0, my_getc, my_ungetc, "%i %ls %i%n", &i1, wc, &i2, &i3);
+    int ret = standalone_cbscanf(0, my_getc, my_ungetc, "%lf", &d);
 
     printf("ret = %d\n", ret);
-    // printf("The float is: %f\n", f);
+    printf("The float is: %f %a\n", d, d);
     // printf("The string is: %s\n", s1);
     // printf("The string is: %s\n", s2);
-    printf("The integer is: %d\n", i1);
-    printf("The integer is: %d\n", i2);
-    printf("The integer is: %d\n", i3);
-    printf("The wide is: %08X %08X\n", wc[0], wc[1]);
+    // printf("The integer is: %d\n", i1);
+    // printf("The integer is: %d\n", i2);
+    // printf("The integer is: %d\n", i3);
+    // printf("The wide is: %08X %08X\n", wc[0], wc[1]);
 
 
-    ret = sscanf(mystr, "%i %ls %i%n", &i1, wc, &i2, &i3);
+    ret = sscanf(mystr, "%lf", &d);
 
     printf("reference ret = %d\n", ret);
-    // printf("reference The float is: %f\n", f);
+    printf("reference The float is: %f %a\n", d, d);
     // printf("reference The string is: %s\n", s1);
     // printf("reference The string is: %s\n", s2);
-    printf("reference The integer is: %d\n", i1);
-    printf("reference The integer is: %d\n", i2);
-    printf("reference The integer is: %d\n", i3);
-    printf("reference The wide is: %08X %08X\n", wc[0], wc[1]);
+    // printf("reference The integer is: %d\n", i1);
+    // printf("reference The integer is: %d\n", i2);
+    // printf("reference The integer is: %d\n", i3);
+    // printf("reference The wide is: %08X %08X\n", wc[0], wc[1]);
 
     return 0;
 }
