@@ -4,7 +4,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
-#include <stdio.h>
 #include <math.h>
 #include <float.h>
 
@@ -1010,6 +1009,48 @@ int standalone_cbscanf(void *restrict cb_state,
 	va_list ap;
 	va_start(ap, fmt);
 	ret = standalone_vcbscanf(cb_state, getc_cb, ungetc_cb, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+static int fscanf_getc(void *state)
+{
+	return getc((FILE*)state);
+}
+
+static void fscanf_ungetc(void *state, int c)
+{
+	ungetc(c, (FILE*)state);
+}
+
+int standalone_fscanf(FILE *restrict f, const char *restrict fmt, ...)
+{
+	int ret;
+	va_list ap;
+	va_start(ap, fmt);
+	ret = standalone_vcbscanf(f, fscanf_getc, fscanf_ungetc, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+static int sscanf_getc(void *state) {
+	const char **s = (const char **)state;
+
+	int c = (unsigned char)**s;
+
+	if (!c) return EOF;
+
+	(*s)++;
+	return c;
+}
+
+int standalone_sscanf(const char *restrict s, const char *restrict fmt, ...)
+{
+	const char *s_ = s;
+	int ret;
+	va_list ap;
+	va_start(ap, fmt);
+	ret = standalone_vcbscanf(&s_, sscanf_getc, 0, fmt, ap);
 	va_end(ap);
 	return ret;
 }

@@ -3,24 +3,7 @@
 #include <wchar.h>
 #include "standalone_scanf.h"
 
-const char *mystr = "0.3932922657273";
-size_t idx;
-
-int my_getc(void *state) {
-    printf("getc at %d", (int)idx);
-    if (idx < strlen(mystr)) {
-        printf(" -> '%c'\n", mystr[idx]);
-        return (unsigned char)mystr[idx++];
-    } else if (idx == strlen(mystr)) {
-        printf(" -> EOF\n");
-        idx++;
-        return EOF;
-    } else {
-        printf(" -> OVERRUN!\n");
-        idx++;
-        return EOF;
-    }
-}
+const char *mystr = "0.393 2922657273";
 
 void my_ungetc(void *state, int c) {
     printf("unget '%c' %d\n", c, c);
@@ -34,7 +17,7 @@ int main (int argc, char **argv) {
     // int i1, i2, i3;
     // wchar_t wc[2] = {0, 0};
 
-    int ret = standalone_cbscanf(0, my_getc, my_ungetc, "%lf", &d);
+    int ret = standalone_fscanf(stdin, "%lf", &d);
 
     printf("ret = %d\n", ret);
     printf("The float is: %f %a\n", d, d);
@@ -46,7 +29,7 @@ int main (int argc, char **argv) {
     // printf("The wide is: %08X %08X\n", wc[0], wc[1]);
 
 
-    ret = sscanf(mystr, "%lf", &d);
+    ret = fscanf(stdin, "%lf", &d);
 
     printf("reference ret = %d\n", ret);
     printf("reference The float is: %f %a\n", d, d);
