@@ -11,10 +11,15 @@
 #include "wtfnicode.h"
 
 typedef struct {
+	int use_strtox_behavior;
+	// Only valid for scanf behavior
     int (*getc_cb)(void *state);
 	void *cb_state;
 	int last_get;
 	int last_get_is_ungotten;
+	// Only valid for strtox behavior
+	const char *s;
+	// Valid for both
 	size_t shlim, shcnt;
 } SCANF_STATE;
 #define my_isdigit(a) (((unsigned)(a)-'0') < 10)
@@ -26,13 +31,18 @@ static int my_isspace(int _c)
 #define shcnt(f) ((f)->shcnt)
 static void shunget(SCANF_STATE *f)
 {
-	assert(!f->last_get_is_ungotten);
 	assert(f->shcnt);
 	f->shcnt--;
-	f->last_get_is_ungotten = 1;
+	if (!f->use_strtox_behavior) {
+		assert(!f->last_get_is_ungotten);
+		f->last_get_is_ungotten = 1;
+	} else {
+		f->s--;
+	}
 }
 static void shlim(SCANF_STATE *f, size_t lim)
 {
+	if (f->use_strtox_behavior) assert(!lim);
 	f->shlim = lim;
 	f->shcnt = 0;
 }
@@ -43,13 +53,17 @@ static int shgetc(SCANF_STATE *f)
 
 	f->shcnt++;
 
-	if (f->last_get_is_ungotten) {
-		f->last_get_is_ungotten = 0;
-		return f->last_get;
-	}
+	if (!f->use_strtox_behavior) {
+		if (f->last_get_is_ungotten) {
+			f->last_get_is_ungotten = 0;
+			return f->last_get;
+		}
 
-	// Have to actually get a new character now
-	return f->last_get = f->getc_cb(f->cb_state);
+		// Have to actually get a new character now
+		return f->last_get = f->getc_cb(f->cb_state);
+	} else {
+		return (unsigned char)*((f->s)++);
+	}
 }
 
 /* Lookup table for digit values. -1==255>=36 -> invalid */
@@ -985,6 +999,7 @@ int standalone_vcbscanf(void *restrict cb_state,
 	const char *restrict fmt, va_list ap)
 {
 	SCANF_STATE scanf_state = {
+		.use_strtox_behavior = 0,
 		.getc_cb = getc_cb,
 		.cb_state = cb_state,
 		.last_get = 0,
@@ -1053,4 +1068,77 @@ int standalone_sscanf(const char *restrict s, const char *restrict fmt, ...)
 	ret = standalone_vcbscanf(&s_, sscanf_getc, 0, fmt, ap);
 	va_end(ap);
 	return ret;
+}
+
+static long double strtox_float(const char *s, char **p, int prec)
+{
+	SCANF_STATE scanf_state = {
+		.use_strtox_behavior = 1,
+		.s = s,
+	};
+	shlim(&scanf_state, 0);
+	long double y = my_floatscan(&scanf_state, prec, 1);
+	size_t cnt = shcnt(&scanf_state);
+	if (p) *p = cnt ? (char *)s + cnt : (char *)s;
+	return y;
+}
+
+float standalone_strtof(const char *restrict s, char **restrict p)
+{
+	return strtox_float(s, p, 0);
+}
+
+double standalone_strtod(const char *restrict s, char **restrict p)
+{
+	return strtox_float(s, p, 1);
+}
+
+long double standalone_strtold(const char *restrict s, char **restrict p)
+{
+	return strtox_float(s, p, 2);
+}
+
+static unsigned long long strtox_int(const char *s, char **p, int base, unsigned long long lim)
+{
+	SCANF_STATE scanf_state = {
+		.use_strtox_behavior = 1,
+		.s = s,
+	};
+	shlim(&scanf_state, 0);
+	unsigned long long y = my_intscan(&scanf_state, base, 1, lim);
+	if (p) {
+		size_t cnt = shcnt(&scanf_state);
+		*p = (char *)s + cnt;
+	}
+	return y;
+}
+
+unsigned long long standalone_strtoull(const char *restrict s, char **restrict p, int base)
+{
+	return strtox_int(s, p, base, ULLONG_MAX);
+}
+
+long long standalone_strtoll(const char *restrict s, char **restrict p, int base)
+{
+	return strtox_int(s, p, base, LLONG_MIN);
+}
+
+unsigned long standalone_strtoul(const char *restrict s, char **restrict p, int base)
+{
+	return strtox_int(s, p, base, ULONG_MAX);
+}
+
+long standalone_strtol(const char *restrict s, char **restrict p, int base)
+{
+	return strtox_int(s, p, base, 0UL+LONG_MIN);
+}
+
+intmax_t standalone_strtoimax(const char *restrict s, char **restrict p, int base)
+{
+	return strtoll(s, p, base);
+}
+
+uintmax_t standalone_strtoumax(const char *restrict s, char **restrict p, int base)
+{
+	return strtoull(s, p, base);
 }
