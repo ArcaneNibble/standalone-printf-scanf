@@ -32,7 +32,6 @@ size_t standalone_c32rtomb(char *restrict s, char32_t wc)
 	return -1;
 }
 
-// Converts UTF-16 to WTF-8. Does not have exactly the same semantics as the "real" c16rtomb!
 size_t standalone_c16rtomb(char *restrict s, char16_t c16, char16_t *restrict ps) {
     if (*ps) {
         // There was a high surrogate remembered in the state
@@ -61,7 +60,6 @@ size_t standalone_c16rtomb(char *restrict s, char16_t c16, char16_t *restrict ps
     }
 }
 
-// Converts wide characters to WTF-8. Does not have exactly the same semantics as the "real" wcrtomb!
 size_t standalone_wcrtomb(char *restrict s, wchar_t wc, char16_t *restrict ps) {
 #if WCHAR_MAX == 65535
     return standalone_c16rtomb(s, wc, ps);
@@ -104,7 +102,6 @@ static const uint32_t bittab[] = {
 #define SA 0xc2u
 #define SB 0xf4u
 
-// Always outputs UTF-32, and the type of the mbstate_t is altered
 size_t standalone_mbrtowc(char32_t *restrict wc, const char *restrict src, size_t n, unsigned *restrict st)
 {
     unsigned c;
